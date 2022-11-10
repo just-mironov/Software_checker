@@ -16,7 +16,7 @@ $MainForm.ForeColor              = [System.Drawing.Color]::FromArgb(255,0,0,0)
 
 #не используется
 $LoadFromFileButton              = New-Object system.Windows.Forms.Button
-$LoadFromFileButton.Visible      = $false 
+$LoadFromFileButton.Visible      = $false
 $LoadFromFileButton.text         = "Загрузить из файла"
 $LoadFromFileButton.width        = 150
 $LoadFromFileButton.height       = 30
@@ -51,7 +51,7 @@ $ProgressBar.width               = 360
 $ProgressBar.height              = 25
 $ProgressBar.Maximum             = 100
 $ProgressBar.Minimum             = 0
-$ProgressBar.Visible             = $false             
+$ProgressBar.Visible             = $false
 $ProgressBar.location            = New-Object System.Drawing.Point(10,340)
 
 $CurrentComputer                 = New-Object system.Windows.Forms.Label
@@ -131,11 +131,11 @@ function Get-CheckedNode($nodes) {
         }
         if ($n.checked -and $n.parent) {
             $n.Text
-        }           
-    }   
+        }
+    }
 }
 
-# выставляем детям тру или фолс в зависимости от родителя   
+# выставляем детям тру или фолс в зависимости от родителя
 $treeView.Add_AfterCheck({
     $node = $_.node
     if($node.nodes) {
@@ -149,23 +149,23 @@ $MainForm.controls.AddRange(@($LoadFromFileButton, $ComputerList, $ComputersCoun
 $CheckButton,$ProgressBar,$TreeView,$CurrentComputer,$OutFileCheckBox,$OutDeskCheckBox))
 
 $OutFileCheckBox.Add_Click({
-    if (!($OutFileCheckBox.checked) -and !($OutDeskCheckBox.Checked))  { 
+    if (!($OutFileCheckBox.checked) -and !($OutDeskCheckBox.Checked))  {
         $CheckButton.Enabled = $false
-    } else { 
+    } else {
         $CheckButton.Enabled = $true
     }
 })
 
 $OutDeskCheckBox.Add_Click({
-    if (!($OutFileCheckBox.checked) -and !($OutDeskCheckBox.Checked))  { 
+    if (!($OutFileCheckBox.checked) -and !($OutDeskCheckBox.Checked))  {
         $CheckButton.Enabled = $false
-    } else { 
+    } else {
         $CheckButton.Enabled = $true
     }
 })
 
 #Основная логика здесь
- 
+
     # код просмотра реестра
     function Get-SoftWare([string[]]$ComputerNames) {
         $obj = @()
@@ -174,14 +174,14 @@ $OutDeskCheckBox.Add_Click({
             $CurrentComputer.text = "Проверяю... " + $ComputerName
             [int]$Percent = ++$i/$ComputerNames.Count*100
             $ProgressBar.Value = $Percent
-            [void]$MainForm.Update()           
+            [void]$MainForm.Update()
 
             if (Test-Connection $ComputerName -Count 1 -Quiet) {
                 try {
                     $ErrorActionPreference = 'Stop'
                     $WindowsVersion = Get-WmiObject -Class Win32_OperatingSystem -ComputerName $ComputerName | select Caption, Version, OSArchitecture
                     } catch { $ExcMsg = $_.Exception.Message }
-                } else { $ExcMsg = "Ping failed" }    
+                } else { $ExcMsg = "Ping failed" }
 
                 function Get-Registry($ComputerName) {
                     $obj = @()
@@ -194,11 +194,11 @@ $OutDeskCheckBox.Add_Click({
                     $regHive = [Microsoft.Win32.RegistryHive]::LocalMachine
                     $Remote_Registry = [Microsoft.Win32.RegistryKey]::OpenRemoteBaseKey($regHive, $ComputerName)
 
-                    foreach ($Sub_Key in $Remote_Registry.OpenSubKey($Registry_Location).GetSubKeyNames()) {                         
+                    foreach ($Sub_Key in $Remote_Registry.OpenSubKey($Registry_Location).GetSubKeyNames()) {
                         $properties = New-Object PSObject -Property ([Ordered]@{
                             CopmuterName = $ComputerName
                             Caption = $WindowsVersion.Caption
-                            Version = $WindowsVersion.Version                    
+                            Version = $WindowsVersion.Version
                             DisplayName =  $Remote_Registry.OpenSubKey("$Registry_Location\$Sub_Key\").GetValue('DisplayName')
                             DisplayVersion = $Remote_Registry.OpenSubKey("$Registry_Location\$Sub_Key\").GetValue('DisplayVersion')
                             Error = $ExcMsg
@@ -212,16 +212,16 @@ $OutDeskCheckBox.Add_Click({
                     $obj += New-Object -TypeName psobject -Property ([Ordered]@{
                         CopmuterName = $ComputerName
                         Caption = ""
-                        Version = ""        
+                        Version = ""
                         DisplayName = ""
-                        DisplayVersion = "" 
+                        DisplayVersion = ""
                         Error = $ExcMsg
                     })
                     $ExcMsg = ""
                     }
                 else {
                     $obj += (Get-Registry $ComputerName)
-                    }                     
+                    }
             }
             return $obj #| select -Unique
     }
@@ -239,7 +239,7 @@ $OutDeskCheckBox.Add_Click({
 
     #Собираем и считаем введеные компьютеры
     $ComputerList.Add_TextChanged({
-        $result = $ComputerList.Text | Select-String "W[S,M,N]-....." -AllMatches
+        $result = $ComputerList.Text | Select-String "W[S,M,N]-.{4}" -AllMatches
         $ComputersCount.text = "Кол-во компьютеров: " + [string]$result.Matches.Count
         $Global:ComputerNameList = [String[]]$result.Matches | select -Unique
     })
@@ -248,19 +248,19 @@ $OutDeskCheckBox.Add_Click({
     $CheckButton.Add_Click({
         [int]$PCCount = $ComputersCount.Text -replace "Кол-во компьютеров: ", ""
         if ($PCCount -and $PCCount -gt 0) {
-                
-                $CurrentComputer.Visible = $true       
+
+                $CurrentComputer.Visible = $true
                 $ProgressBar.Visible     = $true
-            
+
                 $CheckedSoftwareList = Get-CheckedNode($TreeView)
 
                 Add-Content $logfile ((Get-Date).ToString() + ": click check with Arguments[" + ($CheckedSoftwareList -join ", ") + "][" + ($ComputerNameList  -join ", ") + "]" )
 
                 $TimeExecution = Measure-Command { $AllSoft = Get-SoftWare $ComputerNameList } | select @{n = 'String';e = {$_.Minutes,"Minutes",$_.Seconds,"Seconds",$_.Milliseconds,"Milliseconds" -join " "}}
-                Add-Content $logfile ((Get-Date).ToString() + ": Execution time " + $TimeExecution.String ) 
-                   
+                Add-Content $logfile ((Get-Date).ToString() + ": Execution time " + $TimeExecution.String )
+
                 $Result = $AllSoft | Where-Object {($_.DisplayName -Match ($CheckedSoftwareList -join "|")) -or ($_.Error) }
-                
+
                 if ($OutDeskCheckBox.checked) { $Result | Out-GridView -Title "Найденое ПО" }
                 if ($OutFileCheckBox.checked) {
                         $dlg = New-Object System.Windows.Forms.SaveFileDialog
